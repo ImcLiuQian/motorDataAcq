@@ -1,5 +1,6 @@
 package com.imc.motordataacquisition;
 
+import net.openhft.affinity.AffinityLock;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
@@ -7,7 +8,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class MotorDataAcquisitionApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(MotorDataAcquisitionApplication.class, args);
+        //绑定在11号CPU上
+        try (AffinityLock affinityLock = AffinityLock.acquireLock(11)) {
+            SpringApplication.run(MotorDataAcquisitionApplication.class, args);
+        }
     }
-
 }
