@@ -2,6 +2,7 @@ package com.imc.motordataacquisition.service.thread;
 
 import com.imc.motordataacquisition.properties.UdpProperties;
 import lombok.Getter;
+import net.openhft.affinity.AffinityLock;
 
 import java.util.concurrent.locks.LockSupport;
 
@@ -14,10 +15,12 @@ public class BufCreatedThread extends Thread{
 
     @Override
     public void run() {
-        while (!isInterrupted()) {
-            //等待通知
-            LockSupport.park();
-            newBuf = new byte[UdpProperties.RATE][64];
+        try (AffinityLock affinityLock = AffinityLock.acquireLock(10)) {
+            while (!isInterrupted()) {
+                //等待通知
+                LockSupport.park();
+                newBuf = new byte[UdpProperties.RATE][64];
+            }
         }
     }
 }

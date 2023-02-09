@@ -30,25 +30,30 @@ public class AcqThread extends Thread {
     public void run() {
         //开启创建缓冲区的线程
         bufCreatedThread.start();
-        //如果线程被中断，就退出
-        while (!isInterrupted()) {
-            //如果有停止信号，就阻塞在这里
-            if (!running) {
-                LockSupport.park();
-            }
-            //开始接收，将数据缓存到server的buf中
-            server.recv(count++);
-            //当接收到0.75个缓存长度之后，就提前创建下一个缓存区
-            if (count == 0.75 * UdpProperties.RATE) {
-                //这里通知BufCreatedThread进行创建，使用LockSupport
-                LockSupport.unpark(bufCreatedThread);
-            }
-            if (count == UdpProperties.RATE) {
-                //将存excel任务交给线程池
-                executorService.submit(new ExcelSavingTask(server.getCurrData()));
-                //重新设置count和server内部的缓冲区
-                count = 0;
-                server.setCurrData(bufCreatedThread.getNewBuf());
+        //将此线程绑定在11号CPU上面
+        try (AffinityLock affinityLock = AffinityLock.acquireLock(11)) {
+            //设置此线程优先级为最高
+            this.setPriority(MAX_PRIORITY);
+            //如果线程被中断，就退出
+            while (!isInterrupted()) {
+                //如果有停止信号，就阻塞在这里
+                if (!running) {
+                    LockSupport.park();
+                }
+                //开始接收，将数据缓存到server的buf中
+                server.recv(count++);
+                //当接收到0.75个缓存长度之后，就提前创建下一个缓存区
+                if (count == 0.75 * UdpProperties.RATE) {
+                    //这里通知BufCreatedThread进行创建，使用LockSupport
+                    LockSupport.unpark(bufCreatedThread);
+                }
+                if (count == UdpProperties.RATE) {
+                    //将存excel任务交给线程池
+                    executorService.submit(new ExcelSavingTask(server.getCurrData()));
+                    //重新设置count和server内部的缓冲区
+                    count = 0;
+                    server.setCurrData(bufCreatedThread.getNewBuf());
+                }
             }
         }
         //通知停止用于创建Buf的线程

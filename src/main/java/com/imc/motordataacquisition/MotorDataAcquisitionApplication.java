@@ -8,9 +8,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class MotorDataAcquisitionApplication {
 
     public static void main(String[] args) {
-        //绑定在11号CPU上
-        try (AffinityLock affinityLock = AffinityLock.acquireLock(11)) {
-            SpringApplication.run(MotorDataAcquisitionApplication.class, args);
-        }
+        SpringApplication.run(MotorDataAcquisitionApplication.class, args);
     }
 }
